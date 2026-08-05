@@ -311,12 +311,21 @@
   }
   setTimeout(function(){
     if (!window.__moduleLoaded) {
-      showBoot('App did not start. Open the browser console (or check that firebase-config.js loaded) — the sign-in button is not wired up.');
+      showBoot('App did not start — the Firebase SDK could not load from gstatic.com. Check your connection, or whether a content blocker is active on this browser.');
     }
   }, 5000);
 </script>
 <script type="module">
-import { firebaseConfig } from './firebase-config.js';
+// --- Firebase config (inlined so there is no second file to go missing) ---
+const firebaseConfig = {
+  apiKey: "AIzaSyCj0bZFNxolTQwL3N94JR0KYn9sJ4Byac4",
+  authDomain: "granite-board.firebaseapp.com",
+  projectId: "granite-board",
+  storageBucket: "granite-board.firebasestorage.app",
+  messagingSenderId: "397679584463",
+  appId: "1:397679584463:web:9023e425a5c3ac35a683ba"
+};
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
   getRedirectResult, signOut, onAuthStateChanged, browserPopupRedirectResolver }
@@ -347,27 +356,24 @@ function newProvider(){
 
 $('signinBtn').onclick = async () => {
   showGate('info', 'Opening Google sign-in…');
-  // Mobile browsers block popups aggressively — go straight to redirect there.
-  if (isMobile) {
-    try { await signInWithRedirect(auth, newProvider()); }
-    catch (e) { showGate('err', 'Redirect sign-in failed: ' + (e.code || e.message)); }
-    return;
-  }
+  // Popup first on ALL platforms. Safari/iOS partitions third-party storage,
+  // which silently breaks signInWithRedirect (you return signed-out).
+  // A popup opened from a user tap avoids that entirely.
   try {
     await signInWithPopup(auth, newProvider(), browserPopupRedirectResolver);
   } catch (e) {
     const code = e.code || '';
-    // Popup blocked/closed → fall back to redirect rather than failing silently
-    if (code.includes('popup-blocked') || code.includes('popup-closed')
-        || code.includes('cancelled-popup') || code.includes('operation-not-supported')) {
-      showGate('info', 'Popup blocked — redirecting to Google…');
-      try { await signInWithRedirect(auth, newProvider()); }
-      catch (e2) { showGate('err', 'Sign-in failed: ' + (e2.code || e2.message)); }
-    } else if (code.includes('unauthorized-domain')) {
-      showGate('err', 'This domain is not authorized in Firebase. Add ' + location.hostname
-        + ' under Authentication → Settings → Authorized domains.');
+    if (code.includes('unauthorized-domain')) {
+      showGate('err', 'Domain not authorized. Add ' + location.hostname
+        + ' in Firebase → Authentication → Settings → Authorized domains.');
     } else if (code.includes('operation-not-allowed')) {
-      showGate('err', 'Google sign-in is not enabled. Turn it on under Authentication → Sign-in method.');
+      showGate('err', 'Google sign-in is not enabled in Firebase → Authentication → Sign-in method.');
+    } else if (code.includes('popup-closed') || code.includes('cancelled-popup')) {
+      showGate('info', 'Sign-in cancelled. Tap the button to try again.');
+    } else if (code.includes('popup-blocked') || code.includes('operation-not-supported')) {
+      showGate('info', 'Popup blocked — allow pop-ups for this site, then try again. Redirecting as a fallback…');
+      try { sessionStorage.setItem('vpc_redirecting', '1'); await signInWithRedirect(auth, newProvider()); }
+      catch (e2) { showGate('err', 'Sign-in failed: ' + (e2.code || e2.message)); }
     } else {
       showGate('err', 'Sign-in failed: ' + (code || e.message));
     }
@@ -375,15 +381,30 @@ $('signinBtn').onclick = async () => {
 };
 
 // Catch the result when returning from a redirect sign-in
-getRedirectResult(auth).catch(e => {
+getRedirectResult(auth).then(res => {
+  if (res && res.user) sessionStorage.removeItem('vpc_redirecting');
+}).catch(e => {
   const code = e.code || '';
   if (code.includes('unauthorized-domain')) {
-    showGate('err', 'This domain is not authorized in Firebase. Add ' + location.hostname
-      + ' under Authentication → Settings → Authorized domains.');
+    showGate('err', 'Domain not authorized. Add ' + location.hostname
+      + ' in Firebase → Authentication → Settings → Authorized domains.');
   } else if (code) {
     showGate('err', 'Sign-in failed: ' + code);
   }
 });
+
+// If we came back from Google but no session survived, say so instead of
+// silently showing the sign-in screen again (classic Safari ITP symptom).
+if (sessionStorage.getItem('vpc_redirecting')) {
+  setTimeout(() => {
+    if (!auth.currentUser) {
+      sessionStorage.removeItem('vpc_redirecting');
+      showGate('err', 'Signed in at Google, but the session did not persist — '
+        + 'this browser is blocking cross-site storage. Try again (it will use a popup), '
+        + 'or disable "Prevent Cross-Site Tracking" in Safari settings.');
+    }
+  }, 3500);
+}
 
 $('signoutBtn').onclick = () => signOut(auth);
 
