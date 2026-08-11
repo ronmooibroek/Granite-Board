@@ -2,10 +2,10 @@
   "name": "vpc-dashboard-functions",
   "description": "Claude proxy for the KW Granite board dashboard",
   "main": "index.js",
-  "engines": { "node": "20" },
+  "engines": { "node": "22" },
   "dependencies": {
-    "firebase-admin": "^12.1.0",
-    "firebase-functions": "^5.0.1"
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.2"
   },
   "private": true
 }
