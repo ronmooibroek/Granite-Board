@@ -162,3 +162,8 @@ exports.askClaude = onCall(
     return { reply: String(parsed.reply || ''), changes: safe };
   }
 );
+
+// ---- calendar sync (see calendar-sync.js) ----
+const calSync = require('./calendar-sync');
+exports.syncCalendar = calSync.syncCalendar;
+exports.syncCalendarNow = calSync.syncCalendarNow;
