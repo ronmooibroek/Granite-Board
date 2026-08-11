@@ -82,6 +82,21 @@
   section.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);padding:19px 21px;margin-bottom:22px}
   .card h2{font-family:'Fraunces',serif;font-weight:600;font-size:1.1rem;margin:0 0 3px;display:flex;align-items:center;gap:9px}
+  /* collapsible sections */
+  details.sec{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden}
+  details.sec > summary{list-style:none;cursor:pointer;padding:17px 21px;
+    display:flex;align-items:center;gap:9px;font-family:'Fraunces',serif;font-weight:600;font-size:1.1rem;
+    user-select:none}
+  details.sec > summary::-webkit-details-marker{display:none}
+  details.sec > summary:hover{background:#FAFCFE}
+  details.sec > summary .chev{margin-left:auto;color:var(--stone);font-size:.8rem;
+    transition:transform .18s ease;flex:none}
+  details.sec[open] > summary .chev{transform:rotate(90deg)}
+  details.sec > summary .count{font-family:'Archivo',sans-serif;font-size:.7rem;font-weight:700;
+    background:var(--frost);color:var(--house-blue-deep);border-radius:20px;padding:2px 9px}
+  details.sec > summary .addbtn{margin-left:0}
+  .secbody{padding:0 21px 19px}
   .mini-house{width:15px;height:15px;flex:none;border-radius:50%;
     background:radial-gradient(circle,#fff 0 20%,transparent 20%),radial-gradient(circle,var(--house-red) 0 46%,transparent 46%),radial-gradient(circle,#fff 0 70%,transparent 70%),radial-gradient(circle,var(--house-blue) 0 100%)}
   .addbtn{margin-left:auto;background:var(--frost);border:1px solid var(--line);color:var(--house-blue-deep);
@@ -297,56 +312,71 @@
 
   <div class="grid">
     <div>
-      <section class="card">
-        <h2><span class="mini-house"></span> My Action Items
-          <button class="addbtn" data-add="actions">+ Add</button></h2>
-        <p class="intro">Shared with the board — changes save instantly for everyone.</p>
-        <div class="progress"><div class="bar"><i id="progFill"></i></div><span class="pct" id="progPct">0%</span></div>
-        <ul class="tasks" id="taskList"><li class="loading">Loading…</li></ul>
-      </section>
-
-      <section class="card">
-        <h2><span class="mini-house"></span> Hot Topics in Play
-          <button class="addbtn" data-add="topics">+ Add</button></h2>
-        <p class="intro">Live board issues and where each one stands.</p>
-        <div id="topicList"><div class="loading">Loading…</div></div>
-      </section>
-    </div>
-
-    <div>
-      <section class="card">
-        <h2><span class="mini-house"></span> Executive Agenda
-          <button class="addbtn" data-add="agenda">+ Add</button></h2>
-        <p class="intro">Aug 18, 6:30pm, Club Boardroom.</p>
-        <ol class="agenda" id="agendaList"><li class="loading">Loading…</li></ol>
-      </section>
-
-      <section class="card">
-        <h2><span class="mini-house"></span> Ice &amp; Events Ahead
-          <button class="addbtn" data-add="events">+ Add</button></h2>
-        <p class="intro">Auto-synced nightly from the Ice Schedule calendar. <span id="syncInfo"></span> <a href="./sync.html" style="color:var(--house-blue);text-decoration:none">Sync now →</a></p>
-        <ul class="tl" id="eventList"><li class="loading">Loading…</li></ul>
-      </section>
-    </div>
-  </div>
-
-  <div class="grid">
-    <div>
-      <section class="card">
-        <h2><span class="mini-house"></span> League Issues
-          <button class="addbtn" data-add="leagueIssues">+ Log issue</button></h2>
-        <p class="intro">Issues raised by convenors or members, and where each stands.</p>
-        <div id="issueList"><div class="loading">Loading…</div></div>
-      </section>
+      <details class="sec" id="secActions" open>
+        <summary><span class="mini-house"></span> My Action Items
+          <span class="count" id="cntActions">—</span>
+          <span class="chev">▶</span></summary>
+        <div class="secbody">
+          <p class="intro">Shared with the board — changes save instantly for everyone.
+            <button class="addbtn" data-add="actions">+ Add</button></p>
+          <div class="progress"><div class="bar"><i id="progFill"></i></div><span class="pct" id="progPct">0%</span></div>
+          <ul class="tasks" id="taskList"><li class="loading">Loading…</li></ul>
+        </div>
+      </details>
+      <details class="sec" id="secAgenda">
+        <summary><span class="mini-house"></span> Executive Agenda
+          <span class="count" id="cntAgenda">—</span>
+          <span class="chev">▶</span></summary>
+        <div class="secbody">
+          <p class="intro">Aug 18, 6:30pm, Club Boardroom.
+            <button class="addbtn" data-add="agenda">+ Add</button></p>
+          <ol class="agenda" id="agendaList"><li class="loading">Loading…</li></ol>
+        </div>
+      </details>
+      <details class="sec" id="secConv">
+        <summary><span class="mini-house"></span> Convenors
+          <span class="count" id="cntConv">—</span>
+          <span class="chev">▶</span></summary>
+        <div class="secbody">
+          <p class="intro">Your league convenors. Tap a name to call or email.
+            <button class="addbtn" data-add="convenors">+ Add</button></p>
+          <input id="convFilter" placeholder="Filter by name, league or day…" autocomplete="off">
+          <div id="convList"><div class="loading">Loading…</div></div>
+        </div>
+      </details>
     </div>
     <div>
-      <section class="card">
-        <h2><span class="mini-house"></span> Convenors
-          <button class="addbtn" data-add="convenors">+ Add</button></h2>
-        <p class="intro">Your league convenors. Tap a name to call or email.</p>
-        <input id="convFilter" placeholder="Filter by name, league or day…" autocomplete="off">
-        <div id="convList"><div class="loading">Loading…</div></div>
-      </section>
+      <details class="sec" id="secTopics" open>
+        <summary><span class="mini-house"></span> Hot Topics in Play
+          <span class="count" id="cntTopics">—</span>
+          <span class="chev">▶</span></summary>
+        <div class="secbody">
+          <p class="intro">Live board issues and where each one stands.
+            <button class="addbtn" data-add="topics">+ Add</button></p>
+          <div id="topicList"><div class="loading">Loading…</div></div>
+        </div>
+      </details>
+      <details class="sec" id="secIssues" open>
+        <summary><span class="mini-house"></span> League Issues
+          <span class="count" id="cntIssues">—</span>
+          <span class="chev">▶</span></summary>
+        <div class="secbody">
+          <p class="intro">Issues raised by convenors or members, and where each stands.
+            <button class="addbtn" data-add="leagueIssues">+ Log issue</button></p>
+          <div id="issueList"><div class="loading">Loading…</div></div>
+        </div>
+      </details>
+      <details class="sec" id="secEvents">
+        <summary><span class="mini-house"></span> Ice &amp; Events Ahead
+          <span class="count" id="cntEvents">—</span>
+          <span class="chev">▶</span></summary>
+        <div class="secbody">
+          <p class="intro">Auto-synced nightly from the Ice Schedule calendar. <span id="syncInfo"></span>
+            <a href="./sync.html" style="color:var(--house-blue);text-decoration:none">Sync now →</a>
+            <button class="addbtn" data-add="events">+ Add</button></p>
+          <ul class="tl" id="eventList"><li class="loading">Loading…</li></ul>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -592,6 +622,23 @@ function sub(name, sortField, renderer){
   unsubs.push(u);
 }
 
+// ---------------- SECTION STATE ----------------
+function setCount(id, val){ const el = $(id); if (el) el.textContent = val; }
+
+const SEC_KEY = 'vpc:sections';
+(function initSections(){
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(SEC_KEY) || '{}'); } catch {}
+  document.querySelectorAll('details.sec').forEach(d => {
+    if (Object.prototype.hasOwnProperty.call(saved, d.id)) d.open = !!saved[d.id];
+    d.addEventListener('toggle', () => {
+      const cur = {};
+      document.querySelectorAll('details.sec').forEach(x => cur[x.id] = x.open);
+      try { localStorage.setItem(SEC_KEY, JSON.stringify(cur)); } catch {}
+    });
+  });
+})();
+
 // ---------------- RENDERERS ----------------
 const esc = s => String(s ?? '').replace(/[&<>"']/g, m =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -616,6 +663,7 @@ function renderActions(items){
       ${rowBtns('actions', a.id)}
     </li>`).join('');
   bump(items.filter(i => i.done).length, items.length);
+  setCount('cntActions', items.filter(i=>!i.done).length + ' open');
 }
 function bump(done, total){
   const pct = total ? Math.round(done / total * 100) : 0;
@@ -623,6 +671,7 @@ function bump(done, total){
 }
 
 function renderTopics(items){
+  setCount('cntTopics', items.filter(t=>t.status!=='closed').length + ' live');
   const el = $('topicList');
   if (!items.length){ el.innerHTML = '<div class="empty">No topics yet — use + Add.</div>'; return; }
   el.innerHTML = items.map(t => `
@@ -636,6 +685,7 @@ function renderTopics(items){
 }
 
 function renderAgenda(items){
+  setCount('cntAgenda', items.length);
   const el = $('agendaList');
   if (!items.length){ el.innerHTML = '<li class="empty">No agenda items yet.</li>'; return; }
   el.innerHTML = items.map(a => `
@@ -643,6 +693,8 @@ function renderAgenda(items){
 }
 
 function renderEvents(items){
+  const upcoming = items.filter(e => daysTo(e.endDate || e.date) >= 0).length;
+  setCount('cntEvents', upcoming + ' ahead');
   const el = $('eventList');
   if (!items.length){ el.innerHTML = '<li class="empty">No events yet.</li>'; return; }
   el.innerHTML = items.map(e => {
@@ -656,6 +708,7 @@ function renderEvents(items){
 }
 
 function renderConvenors(items){
+  setCount('cntConv', items.length);
   window.__convenors = items;
   drawConvenors();
 }
@@ -684,6 +737,7 @@ function drawConvenors(){
 }
 
 function renderIssues(items){
+  setCount('cntIssues', items.filter(i=>i.status!=='resolved').length + ' open');
   const el = $('issueList');
   if (!items.length){ el.innerHTML = '<div class="empty">No league issues logged. Use + Log issue.</div>'; return; }
   const rank = { new:0, working:1, waiting:2, resolved:3 };
