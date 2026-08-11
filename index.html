@@ -53,6 +53,9 @@
   .userbox img{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
   .userbox .nm{color:#fff;font-weight:600;line-height:1.2}
   .userbox .em{color:#BCD6EE;font-size:.72rem}
+  .headlink{background:rgba(255,255,255,.15);color:#fff;text-decoration:none;border-radius:7px;
+    padding:6px 11px;font-size:.75rem;font-weight:600;white-space:nowrap}
+  .headlink:hover{background:rgba(255,255,255,.28)}
   .signout{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:.75rem;cursor:pointer}
   .signout:hover{background:rgba(255,255,255,.28)}
   .synced{font-size:.68rem;color:#BCD6EE;display:flex;align-items:center;gap:5px}
@@ -260,6 +263,7 @@
         <div class="em" id="uEmail"></div>
         <div class="synced"><span class="dot" id="syncDot"></span><span id="syncTxt">live</span></div>
       </div>
+      <a class="headlink" href="./sync.html" title="Import and export data">⇄ Sync</a>
       <button class="signout" id="signoutBtn">Sign out</button>
     </div>
   </div>
@@ -319,9 +323,8 @@
 
       <section class="card">
         <h2><span class="mini-house"></span> Ice &amp; Events Ahead
-          <button class="addbtn" id="syncBtn" title="Pull the latest from the Ice Schedule calendar">⟳ Sync</button>
           <button class="addbtn" data-add="events">+ Add</button></h2>
-        <p class="intro">Auto-synced nightly from the Ice Schedule calendar. <span id="syncInfo"></span></p>
+        <p class="intro">Auto-synced nightly from the Ice Schedule calendar. <span id="syncInfo"></span> <a href="./sync.html" style="color:var(--house-blue);text-decoration:none">Sync now →</a></p>
         <ul class="tl" id="eventList"><li class="loading">Loading…</li></ul>
       </section>
     </div>
@@ -357,10 +360,6 @@
     </div>
     <div id="pending"></div>
   </section>
-
-  <div style="text-align:center;margin-top:6px">
-    <a href="./sync.html" style="font-size:.83rem;color:var(--house-blue);text-decoration:none">⇄ Sync with Claude chat</a>
-  </div>
 
   <footer>
     Board tool for the K-W Granite Club. Contains items marked <b>in camera</b> — keep confidential.<br>
@@ -882,19 +881,6 @@ async function ask(){
   }
   $('askBtn').disabled = false;
 }
-
-const syncFn = httpsCallable(getFunctions(app, 'us-central1'), 'syncCalendarNow');
-$('syncBtn').onclick = async () => {
-  const b = $('syncBtn'); b.disabled = true; b.textContent = 'Syncing…';
-  try {
-    const r = await syncFn({});
-    $('syncInfo').textContent = `Just synced ${r.data.count} events.`;
-  } catch(e) {
-    $('syncInfo').innerHTML = '<span style="color:var(--house-red)">Sync failed: '
-      + esc(e.message || e.code || '') + '</span>';
-  }
-  b.disabled = false; b.textContent = '⟳ Sync';
-};
 
 // show when the nightly sync last ran
 getDoc(doc(db, 'meta', 'calendarSync')).then(d => {
