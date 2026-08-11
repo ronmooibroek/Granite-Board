@@ -319,8 +319,9 @@
 
       <section class="card">
         <h2><span class="mini-house"></span> Ice &amp; Events Ahead
+          <button class="addbtn" id="syncBtn" title="Pull the latest from the Ice Schedule calendar">⟳ Sync</button>
           <button class="addbtn" data-add="events">+ Add</button></h2>
-        <p class="intro">Season schedule. Past items grey out automatically.</p>
+        <p class="intro">Auto-synced nightly from the Ice Schedule calendar. <span id="syncInfo"></span></p>
         <ul class="tl" id="eventList"><li class="loading">Loading…</li></ul>
       </section>
     </div>
@@ -647,7 +648,7 @@ function renderEvents(items){
     return `<li class="${past ? 'past-ev' : ''} ${e.highlight ? 'hl' : ''}">
       <div class="dt">${esc(e.label || e.date)}</div>
       <div class="ev">${esc(e.title)} ${e.detail ? '<small>· ' + esc(e.detail) + '</small>' : ''}
-        ${rowBtns('events', e.id)}</div></li>`;
+        ${e.source === 'calendar' ? '' : rowBtns('events', e.id)}</div></li>`;
   }).join('');
 }
 
@@ -877,6 +878,28 @@ async function ask(){
   }
   $('askBtn').disabled = false;
 }
+
+const syncFn = httpsCallable(getFunctions(app, 'us-central1'), 'syncCalendarNow');
+$('syncBtn').onclick = async () => {
+  const b = $('syncBtn'); b.disabled = true; b.textContent = 'Syncing…';
+  try {
+    const r = await syncFn({});
+    $('syncInfo').textContent = `Just synced ${r.data.count} events.`;
+  } catch(e) {
+    $('syncInfo').innerHTML = '<span style="color:var(--house-red)">Sync failed: '
+      + esc(e.message || e.code || '') + '</span>';
+  }
+  b.disabled = false; b.textContent = '⟳ Sync';
+};
+
+// show when the nightly sync last ran
+getDoc(doc(db, 'meta', 'calendarSync')).then(d => {
+  if (d.exists() && d.data().lastRun) {
+    const t = d.data().lastRun.toDate();
+    $('syncInfo').textContent = 'Last synced ' + t.toLocaleString('en-CA',
+      { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) + '.';
+  }
+}).catch(()=>{});
 
 $('convFilter').addEventListener('input', drawConvenors);
 
