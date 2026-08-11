@@ -84,13 +84,28 @@
     <div class="msg" id="expMsg"></div>
   </div>
 
+  <!-- CALENDAR -->
+  <div class="card" id="calCard" style="display:none">
+    <h2><span class="step">3</span> Calendar — pull ice &amp; events</h2>
+    <p class="hint">Reads the Ice Schedule calendar and rewrites the events list.
+      Runs automatically each night; use this to pull changes right away.
+      Hand-added events are never touched.</p>
+    <div class="row">
+      <button class="btn btn-primary" id="calBtn">Sync calendar now</button>
+    </div>
+    <div class="msg" id="calMsg"></div>
+  </div>
+
   <!-- IMPORT -->
   <div class="card" id="importCard" style="display:none">
     <h2><span class="step">2</span> Import — apply Claude's updates</h2>
     <p class="hint">Paste the JSON block Claude gives you. You'll see exactly what will
       change before anything is written.</p>
     <textarea id="importBox" placeholder='{"changes":[{"op":"add","collection":"leagueIssues","data":{...}}]}'></textarea>
-    <div class="row" style="margin-top:11px">
+    <div class="opts" style="margin-top:11px">
+      <label><input type="file" id="importFile" accept=".json,.txt" style="font-size:.78rem"></label>
+    </div>
+    <div class="row" style="margin-top:4px">
       <button class="btn btn-primary" id="checkBtn">Preview changes</button>
       <button class="btn btn-ghost" id="clearBtn">Clear</button>
     </div>
@@ -116,6 +131,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, brows
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
   deleteDoc, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFunctions, httpsCallable }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -151,8 +168,23 @@ onAuthStateChanged(auth, async user => {
   say('status','ok','Signed in as ' + user.email);
   $('signinBtn').style.display='none';
   $('exportCard').style.display='block'; $('importCard').style.display='block';
+  $('calCard').style.display='block';
   if (!ME.conf) $('incConf').disabled = true;
 });
+
+// ---------------- CALENDAR ----------------
+const calFn = httpsCallable(getFunctions(app,'us-central1'), 'syncCalendarNow');
+$('calBtn').onclick = async () => {
+  const b = $('calBtn'); b.disabled = true; b.textContent = 'Syncing…';
+  say('calMsg','info','Reading the Ice Schedule calendar…');
+  try {
+    const r = await calFn({});
+    say('calMsg','ok',`Synced ${r.data.count} events.`);
+  } catch(e){
+    say('calMsg','err','Sync failed: ' + (e.message || e.code || ''));
+  }
+  b.disabled = false; b.textContent = 'Sync calendar now';
+};
 
 // ---------------- EXPORT ----------------
 async function grab(name){
@@ -224,6 +256,12 @@ function describe(c){
   return JSON.stringify(c);
 }
 
+$('importFile').addEventListener('change', async e => {
+  const f = e.target.files?.[0]; if (!f) return;
+  $('importBox').value = await f.text();
+  say('impMsg','info',`Loaded ${f.name} — press Preview changes.`);
+});
+
 $('clearBtn').onclick = () => {
   $('importBox').value=''; $('preview').innerHTML=''; $('impMsg').className='msg'; staged=null;
 };
@@ -237,6 +275,10 @@ $('checkBtn').onclick = () => {
   try { parsed = JSON.parse(raw); }
   catch(e){ say('impMsg','err','That is not valid JSON. Paste the whole block Claude gave you, including the outer braces.'); return; }
 
+  window.__replaceColl = typeof parsed.replace === 'string' ? parsed.replace : null;
+  if (window.__replaceColl && !ALLOWED.includes(window.__replaceColl)){
+    say('impMsg','err','Cannot replace unknown collection "'+window.__replaceColl+'".'); return;
+  }
   let changes = Array.isArray(parsed) ? parsed
               : Array.isArray(parsed.changes) ? parsed.changes : null;
   if (!changes){ say('impMsg','err','No "changes" array found in that JSON.'); return; }
@@ -255,6 +297,8 @@ $('checkBtn').onclick = () => {
   staged = good;
   $('preview').innerHTML = `<div class="prev">
     <h4>${good.length} change${good.length===1?'':'s'} ready</h4>
+    ${window.__replaceColl ? '<div style="font-size:.79rem;color:var(--amber);margin-bottom:8px">'
+      + 'Replace mode: existing <b>'+esc(window.__replaceColl)+'</b> records not listed above will be deleted.</div>' : ''}
     <ul>${good.map(c=>'<li>'+esc(describe(c))+'</li>').join('')}</ul>
     ${bad.length ? '<div style="font-size:.78rem;color:var(--house-red);margin-bottom:9px">Skipped: '+esc(bad.join('; '))+'</div>' : ''}
     <button class="btn btn-good" id="applyBtn">Apply ${good.length}</button>
@@ -266,7 +310,19 @@ $('checkBtn').onclick = () => {
 async function apply(){
   if (!staged) return;
   $('applyBtn').disabled = true;
-  let ok=0, fail=0; const errs=[];
+  let ok=0, fail=0, removed=0; const errs=[];
+
+  if (window.__replaceColl){
+    const coll = window.__replaceColl;
+    const keep = new Set(staged.filter(c=>c.collection===coll && c.id).map(c=>c.id));
+    try {
+      const snap = await getDocs(collection(db, coll));
+      for (const d of snap.docs){
+        if (!keep.has(d.id)){ await deleteDoc(d.ref); removed++; }
+      }
+    } catch(e){ errs.push('cleanup: '+(e.code||e.message)); }
+  }
+
   for (const c of staged){
     try {
       const meta = { updatedBy: ME.email, updatedAt: serverTimestamp() };
@@ -285,8 +341,10 @@ async function apply(){
     } catch(e){ fail++; errs.push((c.id||c.data?.title||'?')+': '+(e.code||e.message)); }
   }
   staged=null; $('preview').innerHTML='';
-  if (fail) say('impMsg','warn',`Applied ${ok}, ${fail} failed. ${errs.slice(0,3).join(' · ')}`);
-  else { say('impMsg','ok',`Applied ${ok} change${ok===1?'':'s'}. Open the dashboard to see them.`); $('importBox').value=''; }
+  const rem = removed ? `, removed ${removed} stale` : '';
+  if (fail) say('impMsg','warn',`Applied ${ok}${rem}, ${fail} failed. ${errs.slice(0,3).join(' · ')}`);
+  else { say('impMsg','ok',`Applied ${ok} change${ok===1?'':'s'}${rem}. Open the dashboard to see them.`); $('importBox').value=''; $('importFile').value=''; }
+  window.__replaceColl = null;
 }
 </script>
 </body>
