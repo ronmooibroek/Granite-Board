@@ -1,0 +1,93 @@
+rules_version = '2';
+
+// K-W Granite Club — VP Curling Dashboard
+// Access model: nobody reads or writes anything unless their Google
+// account email has a document in /boardMembers. Confidential (in-camera)
+// items are further restricted to members flagged with canSeeConfidential.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- helpers -------------------------------------------------
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function memberDoc() {
+      return get(/databases/$(database)/documents/boardMembers/$(request.auth.token.email));
+    }
+
+    function isMember() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/boardMembers/$(request.auth.token.email));
+    }
+
+    function canSeeConfidential() {
+      return isMember() && memberDoc().data.canSeeConfidential == true;
+    }
+
+    // ---- board membership ---------------------------------------
+    // Readable by members so the app can show who's on the board.
+    // Writable ONLY from the Firebase console (add/remove people there),
+    // so nobody can grant themselves access from the browser.
+    match /boardMembers/{email} {
+      allow read: if isMember();
+      allow write: if false;
+    }
+
+    // ---- action items -------------------------------------------
+    match /actions/{id} {
+      allow read, write: if isMember();
+    }
+
+    // ---- hot topics ---------------------------------------------
+    // A topic marked confidential:true is only visible to members
+    // flagged canSeeConfidential. Note: Firestore rules filter per
+    // document on GET, and reject the whole query on LIST unless the
+    // query itself constrains to allowed docs — the app queries
+    // accordingly (see loadTopics()).
+    match /topics/{id} {
+      allow read: if isMember()
+        && (resource.data.confidential != true || canSeeConfidential());
+      allow create: if isMember()
+        && (request.resource.data.confidential != true || canSeeConfidential());
+      allow update, delete: if isMember()
+        && (resource.data.confidential != true || canSeeConfidential());
+    }
+
+    // ---- meeting agenda -----------------------------------------
+    match /agenda/{id} {
+      allow read: if isMember()
+        && (resource.data.confidential != true || canSeeConfidential());
+      allow create: if isMember()
+        && (request.resource.data.confidential != true || canSeeConfidential());
+      allow update, delete: if isMember()
+        && (resource.data.confidential != true || canSeeConfidential());
+    }
+
+    // ---- ice & events timeline ----------------------------------
+    match /events/{id} {
+      allow read, write: if isMember();
+    }
+
+    // ---- convenors (member contact info — board only) -----------
+    match /convenors/{id} {
+      allow read, write: if isMember();
+    }
+
+    // ---- league issues ------------------------------------------
+    match /leagueIssues/{id} {
+      allow read, write: if isMember();
+    }
+
+    // ---- notes / meta -------------------------------------------
+    match /meta/{id} {
+      allow read, write: if isMember();
+    }
+
+    // ---- deny everything else -----------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
