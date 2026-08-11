@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sync — VP Curling Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&family=Archivo:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1B2530;--ink-soft:#48535F;--frost:#EAF1F6;--house-blue:#1D5FA6;
+    --house-blue-deep:#14406F;--house-red:#C43D30;--stone:#79808A;--line:#D4E0EA;
+    --good:#2E7D52;--amber:#B7791F}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;color:var(--ink);
+    background:radial-gradient(circle at 1px 1px,rgba(29,95,166,.06) 1px,transparent 0) 0 0/22px 22px,var(--frost);
+    padding:24px 16px 60px;line-height:1.5}
+  .wrap{max-width:680px;margin:0 auto}
+  .card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:22px;
+    box-shadow:0 8px 24px rgba(20,48,74,.07);margin-bottom:18px}
+  .house{width:52px;height:52px;margin:0 auto 14px;border-radius:50%;
+    background:radial-gradient(circle,#fff 0 16%,transparent 16%),radial-gradient(circle,var(--house-red) 0 40%,transparent 40%),radial-gradient(circle,#fff 0 66%,transparent 66%),radial-gradient(circle,var(--house-blue) 0 100%);
+    box-shadow:inset 0 0 8px rgba(0,0,0,.18)}
+  h1{font-family:'Fraunces',serif;font-size:1.25rem;margin:0 0 3px;text-align:center}
+  .sub{text-align:center;color:var(--ink-soft);font-size:.84rem;margin:0 0 20px}
+  h2{font-family:'Fraunces',serif;font-size:1.05rem;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .step{background:var(--house-blue);color:#fff;font-family:'Archivo';font-size:.7rem;
+    width:21px;height:21px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .hint{font-size:.81rem;color:var(--ink-soft);margin:0 0 13px}
+  .btn{border:none;border-radius:9px;padding:11px 18px;font-weight:600;font-size:.88rem;
+    cursor:pointer;font-family:inherit}
+  .btn-primary{background:var(--house-blue);color:#fff}
+  .btn-primary:hover{background:var(--house-blue-deep)}
+  .btn-primary:disabled{background:var(--stone);cursor:not-allowed}
+  .btn-ghost{background:var(--frost);color:var(--ink-soft)}
+  .btn-good{background:var(--good);color:#fff}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.74rem;resize:vertical;color:var(--ink)}
+  textarea:focus{outline:2px solid var(--house-blue);border-color:transparent}
+  #exportBox{min-height:150px;background:#F7FAFC}
+  #importBox{min-height:120px}
+  .msg{font-size:.83rem;padding:10px 13px;border-radius:8px;margin:12px 0 0;display:none}
+  .msg.on{display:block}
+  .msg.ok{background:#E4F1EA;color:var(--good)}
+  .msg.err{background:#FBE7E5;color:var(--house-red)}
+  .msg.info{background:var(--frost);color:var(--ink-soft)}
+  .msg.warn{background:#FBF1DD;color:var(--amber)}
+  .prev{border:1px solid var(--amber);background:#FEFBF4;border-radius:10px;padding:13px 15px;margin-top:13px}
+  .prev h4{margin:0 0 8px;font-size:.84rem;color:var(--amber)}
+  .prev ul{margin:0 0 11px;padding-left:18px;font-size:.81rem}
+  .prev li{margin-bottom:3px}
+  .opts{display:flex;gap:14px;font-size:.82rem;margin-bottom:11px;flex-wrap:wrap}
+  .opts label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .nav{text-align:center;margin-top:8px}
+  .nav a{color:var(--house-blue);font-size:.84rem;text-decoration:none}
+  code{background:var(--frost);padding:1px 5px;border-radius:4px;font-size:.85em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="house"></div>
+    <h1>Dashboard Sync</h1>
+    <p class="sub">Move data between the dashboard and your Claude chat</p>
+    <div class="msg info on" id="status">Checking sign-in…</div>
+    <button class="btn btn-primary" id="signinBtn" style="display:none">Sign in with Google</button>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="card" id="exportCard" style="display:none">
+    <h2><span class="step">1</span> Export — send state to Claude</h2>
+    <p class="hint">Copy this and paste it into your Claude chat so it knows the current
+      state of the board before advising or drafting updates.</p>
+    <div class="opts">
+      <label><input type="checkbox" id="incWork" checked> Actions, topics, agenda, issues</label>
+      <label><input type="checkbox" id="incConv"> Convenors</label>
+      <label><input type="checkbox" id="incEvents"> Ice &amp; events</label>
+      <label><input type="checkbox" id="incConf"> Include in-camera items</label>
+    </div>
+    <div class="row" style="margin-bottom:11px">
+      <button class="btn btn-primary" id="genBtn">Generate</button>
+      <button class="btn btn-ghost" id="copyBtn">Copy to clipboard</button>
+    </div>
+    <textarea id="exportBox" readonly placeholder="Press Generate…"></textarea>
+    <div class="msg" id="expMsg"></div>
+  </div>
+
+  <!-- IMPORT -->
+  <div class="card" id="importCard" style="display:none">
+    <h2><span class="step">2</span> Import — apply Claude's updates</h2>
+    <p class="hint">Paste the JSON block Claude gives you. You'll see exactly what will
+      change before anything is written.</p>
+    <textarea id="importBox" placeholder='{"changes":[{"op":"add","collection":"leagueIssues","data":{...}}]}'></textarea>
+    <div class="row" style="margin-top:11px">
+      <button class="btn btn-primary" id="checkBtn">Preview changes</button>
+      <button class="btn btn-ghost" id="clearBtn">Clear</button>
+    </div>
+    <div id="preview"></div>
+    <div class="msg" id="impMsg"></div>
+  </div>
+
+  <div class="nav"><a href="./index.html">← Back to the dashboard</a></div>
+</div>
+
+<script type="module">
+const firebaseConfig = {
+  apiKey: "AIzaSyCj0bZFNxolTQwL3N94JR0KYn9sJ4Byac4",
+  authDomain: "granite-board.firebaseapp.com",
+  projectId: "granite-board",
+  storageBucket: "granite-board.firebasestorage.app",
+  messagingSenderId: "397679584463",
+  appId: "1:397679584463:web:9023e425a5c3ac35a683ba"
+};
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, browserPopupRedirectResolver }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
+  deleteDoc, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const $ = id => document.getElementById(id);
+let ME = null, staged = null;
+
+function say(el, kind, text){ const m=$(el); m.className='msg on '+kind; m.textContent=text; }
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+$('signinBtn').onclick = async () => {
+  try {
+    const p = new GoogleAuthProvider();
+    p.setCustomParameters({ prompt:'select_account' });
+    await signInWithPopup(auth, p, browserPopupRedirectResolver);
+  } catch(e){ say('status','err','Sign-in failed: ' + (e.code||e.message)); }
+};
+
+onAuthStateChanged(auth, async user => {
+  if (!user){
+    say('status','info','Sign in to sync.');
+    $('signinBtn').style.display='block';
+    $('exportCard').style.display='none'; $('importCard').style.display='none';
+    return;
+  }
+  const m = await getDoc(doc(db,'boardMembers',user.email)).catch(()=>null);
+  if (!m || !m.exists()){
+    say('status','err','Not on the board list: ' + user.email);
+    return;
+  }
+  ME = { email:user.email, conf: m.data().canSeeConfidential === true };
+  say('status','ok','Signed in as ' + user.email);
+  $('signinBtn').style.display='none';
+  $('exportCard').style.display='block'; $('importCard').style.display='block';
+  if (!ME.conf) $('incConf').disabled = true;
+});
+
+// ---------------- EXPORT ----------------
+async function grab(name){
+  const snap = await getDocs(collection(db, name));
+  return snap.docs.map(d => {
+    const { updatedAt, updatedBy, ...rest } = d.data();
+    return { id: d.id, ...rest };
+  });
+}
+
+$('genBtn').onclick = async () => {
+  $('genBtn').disabled = true;
+  say('expMsg','info','Reading…');
+  try {
+    const out = { exported: new Date().toISOString().slice(0,16).replace('T',' ') };
+    const keepConf = $('incConf').checked && ME.conf;
+    const clean = arr => arr
+      .filter(x => keepConf || x.confidential !== true)
+      .map(x => { const y={...x}; if (!keepConf) delete y.confidential; return y; });
+
+    if ($('incWork').checked){
+      out.actions      = clean(await grab('actions'));
+      out.topics       = clean(await grab('topics'));
+      out.agenda       = clean(await grab('agenda'));
+      out.leagueIssues = clean(await grab('leagueIssues'));
+    }
+    if ($('incConv').checked){
+      // names and leagues only — no member contact details leave the database
+      out.convenors = (await grab('convenors'))
+        .map(c => ({ id:c.id, name:c.name, league:c.league, day:c.day }));
+    }
+    if ($('incEvents').checked){
+      out.events = (await grab('events'))
+        .map(e => ({ id:e.id, label:e.label, title:e.title, date:e.date, endDate:e.endDate, detail:e.detail }))
+        .sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+    }
+    const txt = 'Here is my current VP Curling dashboard state:\n\n```json\n'
+      + JSON.stringify(out, null, 1) + '\n```';
+    $('exportBox').value = txt;
+    const n = Object.entries(out).filter(([k])=>k!=='exported')
+      .reduce((s,[,v])=>s+(Array.isArray(v)?v.length:0),0);
+    say('expMsg','ok',`Ready — ${n} records. Copy and paste into your Claude chat.`);
+  } catch(e){
+    say('expMsg','err','Export failed: ' + (e.code||e.message));
+  }
+  $('genBtn').disabled = false;
+};
+
+$('copyBtn').onclick = async () => {
+  const t = $('exportBox');
+  if (!t.value){ say('expMsg','warn','Press Generate first.'); return; }
+  try {
+    await navigator.clipboard.writeText(t.value);
+    say('expMsg','ok','Copied to clipboard.');
+  } catch {
+    t.removeAttribute('readonly'); t.select(); t.setSelectionRange(0, 999999);
+    say('expMsg','info','Select all and copy manually (long-press → Copy).');
+  }
+};
+
+// ---------------- IMPORT ----------------
+const ALLOWED = ['actions','topics','agenda','events','leagueIssues','convenors'];
+
+function describe(c){
+  const t = c.data?.title || c.data?.name || c.id || '(untitled)';
+  if (c.op==='add')    return `Add to ${c.collection}: "${t}"`;
+  if (c.op==='update') return `Update ${c.collection}/${c.id}: ${Object.keys(c.data||{}).join(', ')}`;
+  if (c.op==='delete') return `Delete ${c.collection}/${c.id}`;
+  return JSON.stringify(c);
+}
+
+$('clearBtn').onclick = () => {
+  $('importBox').value=''; $('preview').innerHTML=''; $('impMsg').className='msg'; staged=null;
+};
+
+$('checkBtn').onclick = () => {
+  $('preview').innerHTML=''; staged=null;
+  let raw = $('importBox').value.trim();
+  if (!raw){ say('impMsg','warn','Paste something first.'); return; }
+  raw = raw.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch(e){ say('impMsg','err','That is not valid JSON. Paste the whole block Claude gave you, including the outer braces.'); return; }
+
+  let changes = Array.isArray(parsed) ? parsed
+              : Array.isArray(parsed.changes) ? parsed.changes : null;
+  if (!changes){ say('impMsg','err','No "changes" array found in that JSON.'); return; }
+
+  const bad = [];
+  const good = changes.filter(c => {
+    if (!ALLOWED.includes(c.collection)) { bad.push(`unknown collection "${c.collection}"`); return false; }
+    if (!['add','update','delete'].includes(c.op)) { bad.push(`unknown op "${c.op}"`); return false; }
+    if (c.op!=='add' && !c.id) { bad.push(`${c.op} with no id`); return false; }
+    if (!ME.conf && (c.data?.confidential === true)) { bad.push('confidential item (not permitted for your account)'); return false; }
+    return true;
+  });
+
+  if (!good.length){ say('impMsg','err','Nothing valid to apply. ' + bad.join('; ')); return; }
+
+  staged = good;
+  $('preview').innerHTML = `<div class="prev">
+    <h4>${good.length} change${good.length===1?'':'s'} ready</h4>
+    <ul>${good.map(c=>'<li>'+esc(describe(c))+'</li>').join('')}</ul>
+    ${bad.length ? '<div style="font-size:.78rem;color:var(--house-red);margin-bottom:9px">Skipped: '+esc(bad.join('; '))+'</div>' : ''}
+    <button class="btn btn-good" id="applyBtn">Apply ${good.length}</button>
+  </div>`;
+  $('applyBtn').onclick = apply;
+  say('impMsg','info','Review the list, then Apply.');
+};
+
+async function apply(){
+  if (!staged) return;
+  $('applyBtn').disabled = true;
+  let ok=0, fail=0; const errs=[];
+  for (const c of staged){
+    try {
+      const meta = { updatedBy: ME.email, updatedAt: serverTimestamp() };
+      if (c.op==='add'){
+        const payload = { ...c.data, ...meta };
+        if (c.collection==='actions' && payload.done===undefined) payload.done=false;
+        if (payload.order===undefined) payload.order = Date.now()%100000;
+        if (c.id) await setDoc(doc(db,c.collection,c.id), payload, { merge:true });
+        else await addDoc(collection(db,c.collection), payload);
+      } else if (c.op==='update'){
+        await updateDoc(doc(db,c.collection,c.id), { ...c.data, ...meta });
+      } else {
+        await deleteDoc(doc(db,c.collection,c.id));
+      }
+      ok++;
+    } catch(e){ fail++; errs.push((c.id||c.data?.title||'?')+': '+(e.code||e.message)); }
+  }
+  staged=null; $('preview').innerHTML='';
+  if (fail) say('impMsg','warn',`Applied ${ok}, ${fail} failed. ${errs.slice(0,3).join(' · ')}`);
+  else { say('impMsg','ok',`Applied ${ok} change${ok===1?'':'s'}. Open the dashboard to see them.`); $('importBox').value=''; }
+}
+</script>
+</body>
+</html>
