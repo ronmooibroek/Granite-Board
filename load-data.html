@@ -3,192 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Load Data — VP Curling Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&family=Archivo:wght@700&display=swap" rel="stylesheet">
+<title>Moved — use Sync</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#1B2530;--ink-soft:#48535F;--frost:#EAF1F6;--house-blue:#1D5FA6;
-    --house-blue-deep:#14406F;--house-red:#C43D30;--stone:#79808A;--line:#D4E0EA;--good:#2E7D52;--amber:#B7791F}
-  *{box-sizing:border-box}
+    --house-blue-deep:#14406F;--house-red:#C43D30;--line:#D4E0EA;--amber:#B7791F}
   body{margin:0;font-family:'Inter',system-ui,sans-serif;color:var(--ink);
     background:radial-gradient(circle at 1px 1px,rgba(29,95,166,.06) 1px,transparent 0) 0 0/22px 22px,var(--frost);
-    padding:28px 18px;line-height:1.5}
-  .card{max-width:620px;margin:0 auto;background:#fff;border:1px solid var(--line);
-    border-radius:16px;padding:28px;box-shadow:0 8px 24px rgba(20,48,74,.07)}
-  .house{width:60px;height:60px;margin:0 auto 16px;border-radius:50%;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;line-height:1.55}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:32px;
+    max-width:460px;box-shadow:0 8px 24px rgba(20,48,74,.07);text-align:center}
+  .house{width:56px;height:56px;margin:0 auto 16px;border-radius:50%;
     background:radial-gradient(circle,#fff 0 16%,transparent 16%),radial-gradient(circle,var(--house-red) 0 40%,transparent 40%),radial-gradient(circle,#fff 0 66%,transparent 66%),radial-gradient(circle,var(--house-blue) 0 100%);
     box-shadow:inset 0 0 8px rgba(0,0,0,.18)}
-  h1{font-family:'Fraunces',serif;font-size:1.3rem;margin:0 0 4px;text-align:center}
-  .sub{text-align:center;color:var(--ink-soft);font-size:.86rem;margin:0 0 22px}
-  .btn{border:none;border-radius:10px;padding:12px 20px;font-weight:600;font-size:.92rem;
-    cursor:pointer;font-family:inherit;width:100%;margin-bottom:10px}
-  .btn-primary{background:var(--house-blue);color:#fff}
-  .btn-primary:hover{background:var(--house-blue-deep)}
-  .btn-primary:disabled{background:var(--stone);cursor:not-allowed}
-  .btn-ghost{background:var(--frost);color:var(--ink-soft)}
-  .msg{font-size:.86rem;padding:12px 14px;border-radius:9px;margin-bottom:16px;display:none}
-  .msg.on{display:block}
-  .msg.err{background:#FBE7E5;color:var(--house-red)}
-  .msg.ok{background:#E4F1EA;color:var(--good)}
-  .msg.info{background:var(--frost);color:var(--ink-soft)}
-  .msg.warn{background:#FBF1DD;color:var(--amber)}
-  .counts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
-  .counts div{background:var(--frost);border-radius:10px;padding:12px 8px;text-align:center}
-  .counts b{display:block;font-family:'Archivo';font-size:1.4rem;color:var(--house-blue-deep)}
-  .counts span{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em}
-  #log{font-family:ui-monospace,Menlo,monospace;font-size:.74rem;background:#F7FAFC;
-    border:1px solid var(--line);border-radius:9px;padding:12px;max-height:230px;overflow:auto;
-    white-space:pre-wrap;display:none;margin-top:14px}
-  #log.on{display:block}
-  .note{font-size:.78rem;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:14px;margin-top:18px}
-  .note b{color:var(--ink)}
-  a{color:var(--house-blue)}
+  h1{font-family:'Fraunces',serif;font-size:1.2rem;margin:0 0 10px}
+  p{font-size:.88rem;color:var(--ink-soft);margin:0 0 16px}
+  .note{background:#FBF1DD;color:var(--amber);border-radius:9px;padding:11px 14px;
+    font-size:.82rem;text-align:left;margin-bottom:18px}
+  a.btn{display:inline-block;background:var(--house-blue);color:#fff;text-decoration:none;
+    border-radius:9px;padding:11px 20px;font-weight:600;font-size:.9rem}
+  a.btn:hover{background:var(--house-blue-deep)}
+  a.plain{color:var(--house-blue);font-size:.84rem;text-decoration:none;display:block;margin-top:14px}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="house"></div>
-  <h1>Load Dashboard Data</h1>
-  <p class="sub">One-time import for the K-W Granite board dashboard</p>
-
-  <div class="msg info on" id="status">Checking sign-in…</div>
-
-  <div class="counts">
-    <div><b>9</b><span>Actions</span></div>
-    <div><b>10</b><span>Topics</span></div>
-    <div><b>5</b><span>Agenda</span></div>
-    <div><b>10</b><span>Events</span></div>
+  <div class="card">
+    <div class="house"></div>
+    <h1>This page has been retired</h1>
+    <div class="note">
+      The old one-click loader carried a fixed copy of the data baked into the page,
+      so it went stale the moment anything changed.
+    </div>
+    <p>Loading and updating data now happens on the <b>Sync</b> page, which handles
+       every collection — including convenors — and shows you exactly what will change
+       before it writes anything.</p>
+    <a class="btn" href="./sync.html">Go to Sync &rarr;</a>
+    <a class="plain" href="./index.html">Back to the dashboard</a>
   </div>
-
-  <button class="btn btn-primary" id="signinBtn" style="display:none">Sign in with Google</button>
-  <button class="btn btn-primary" id="loadBtn" style="display:none" disabled>Load the data</button>
-  <button class="btn btn-ghost" id="doneBtn" style="display:none">Open the dashboard →</button>
-
-  <div id="log"></div>
-
-  <div class="note">
-    <b>Safe to run more than once.</b> Each item has a fixed ID, so re-running updates
-    existing records instead of creating duplicates.<br><br>
-    <b>Board members are not loaded here.</b> Security rules deliberately block adding
-    people from the browser — add them in the Firebase console under
-    <i>boardMembers</i> so nobody can grant themselves access.
-  </div>
-</div>
-
-<script type="module">
-const firebaseConfig = {
-  apiKey: "AIzaSyCj0bZFNxolTQwL3N94JR0KYn9sJ4Byac4",
-  authDomain: "granite-board.firebaseapp.com",
-  projectId: "granite-board",
-  storageBucket: "granite-board.firebasestorage.app",
-  messagingSenderId: "397679584463",
-  appId: "1:397679584463:web:9023e425a5c3ac35a683ba"
-};
-
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, browserPopupRedirectResolver }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, doc, setDoc, serverTimestamp }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const $ = id => document.getElementById(id);
-
-function say(kind, text){ const m=$('status'); m.className='msg on '+kind; m.textContent=text; }
-function log(line){ const l=$('log'); l.classList.add('on'); l.textContent += line+'\n'; l.scrollTop=l.scrollHeight; }
-
-const DATA = {
-  actions: [
-    { order:1, priority:'waiting', done:false, title:'Reply to Kyla Core — Little Rocks', detail:'Waiting since Jul 31. Wants 12:30–2:30 (not 2:00), Jan 3 confirmation, registration timing, volunteer call.' },
-    { order:2, priority:'high', done:false, title:'Contact Sam re: elite clinic Saturdays', detail:'Sep 26, Oct 3, Nov 21, Dec 19 (9am–12pm). John still waiting on you.' },
-    { order:3, priority:'high', done:false, title:'Meet James Taylor (icemaker)', detail:'Intro email sent. John arranging; James mid-flood during ice install.' },
-    { order:4, priority:'high', done:false, title:'Resolve Sunday 2.5-hr maintenance window', detail:"John asks if the gap is driven by James's needs. Katie: calendar predates James's hire." },
-    { order:5, priority:'med', done:false, title:'Submit board goals / interests form', detail:"Dave's poll to set the year's focus — sent Aug 3 to the full board." },
-    { order:6, priority:'med', done:false, title:'Convenor list + documented privileges', detail:'Add Sabina and John Price; get John to document what convenor access includes.' },
-    { order:7, priority:'med', done:false, title:'Review std employment contract', detail:'Dave circulated 2025 version Aug 4. Alex Turner-Bolt (regulated HR professional) offered to lead.' },
-    { order:8, priority:'low', done:false, title:'Reply to Curling Ontario on U20 hosting', detail:'No spare ice without cutting a league; late-season alternative floated.' },
-    { order:9, priority:'waiting', done:false, title:'Pay club statement (July 3)', detail:'Still outstanding — e-transfer to payments@kwgranite.com.' }
-  ],
-  topics: [
-    { order:1, status:'open', confidential:true, title:'Tyler Bell complaint — GM conduct', detail:'Personnel matter under Executive review (bylaw 4.30). On the Aug 18 agenda.' },
-    { order:2, status:'action', confidential:false, title:"Little Rocks — Kyla Core's asks", detail:'Wants slot restored to 12:30–2:30. Plus registration window, volunteer call for student hours, pro shop, sweaters, Junior fund.' },
-    { order:3, status:'open', confidential:false, title:'Sunday ice maintenance window', detail:"John questions the 2.5-hour Sunday gap; Katie notes calendar predates James's hire. Joint meeting being set up." },
-    { order:4, status:'open', confidential:false, title:'Ice rental vs. practice ice', detail:'Calendar built to create member practice time; John wants to keep renting those slots. Policy call for VP Curling.' },
-    { order:5, status:'open', confidential:false, title:'2026-27 league dates', detail:'Settled with John and Michael Greenwood; league play begins week of Sep 28.' },
-    { order:6, status:'action', confidential:false, title:'Elite clinic proposal', detail:"John's four Saturday clinics alongside Sam's club clinics. Waiting on you to ask Sam to head-coach." },
-    { order:7, status:'open', confidential:false, title:'Employment contract & handbook', detail:'Alex Turner-Bolt is a regulated HR professional and offered to lead — the in-house expertise the handbook review flagged as missing.' },
-    { order:8, status:'hold', confidential:false, title:'Registration data hygiene', detail:"Last year's members weren't purged before Aug 3 opening, so reports mix old and new." },
-    { order:9, status:'hold', confidential:false, title:'CurlON U20 hosting request', detail:'CurlON lists KW Granite as host, but no spare ice without cutting a committed league.' },
-    { order:10, status:'closed', confidential:false, title:'Regional Training Centre (RTC)', detail:'Shelved for 2026 after a Curling Canada funding shortfall. Proposal on file for a future revisit.' }
-  ],
-  agenda: [
-    { order:1, title:'Transition briefing', detail:'Matt Wilkinson & Ashley Falconer presenting.' },
-    { order:2, title:'Ice rental vs. practice ice policy', detail:'Rentals during member practice slots — your call to frame.' },
-    { order:3, title:'Tyler Bell personnel matter', detail:'In-camera — GM conduct complaint follow-up.', confidential:true },
-    { order:4, title:'Employee Handbook — next steps', detail:"Pending Dave's H2R meeting; Alex's HR expertise now in play." },
-    { order:5, title:'Signing authority & keys', detail:'Matt W holds keys until cheque-signing transfers.' }
-  ],
-  events: [
-    { date:'2026-08-04', endDate:'2026-08-06', label:'Now – Aug 6', title:'Ice install', detail:'daily 8am–10pm', highlight:true },
-    { date:'2026-08-07', endDate:'2026-08-09', label:'Aug 7 – 9', title:'Summer Spiel', detail:'Oliver', highlight:false },
-    { date:'2026-08-09', endDate:'2026-08-21', label:'Aug 9 – 21', title:'Trillium Camp', detail:'Matt W · limits building access', highlight:false },
-    { date:'2026-08-15', endDate:'2026-08-15', label:'Aug 15', title:'Open House + LTC registration opens', detail:'100th anniversary', highlight:false },
-    { date:'2026-08-18', endDate:'2026-08-18', label:'Aug 18', title:'Executive meeting', detail:'6:30pm, Boardroom', highlight:true },
-    { date:'2026-08-21', endDate:'2026-08-23', label:'Aug 21 – 23', title:'Team Performance Lab', detail:'Byron rental (was "Junior Slam")', highlight:false },
-    { date:'2026-09-04', endDate:'2026-09-04', label:'Sep 4', title:'KW Fall Classic', detail:'9am–10pm', highlight:false },
-    { date:'2026-09-28', endDate:'2026-10-01', label:'Sep 28 – Oct 1', title:'League play begins', detail:'Mon Open, Wed Men, Thu Women · 6 sheets', highlight:true },
-    { date:'2026-10-10', endDate:'2026-10-12', label:'Oct 10 – 12', title:'Ice maintenance', detail:'Thanksgiving weekend shutdown', highlight:false },
-    { date:'2026-10-18', endDate:'2026-10-18', label:'Oct 18', title:'Junior programs begin', detail:'after Thanksgiving', highlight:false }
-  ]
-};
-
-$('signinBtn').onclick = async () => {
-  try {
-    const p = new GoogleAuthProvider();
-    p.setCustomParameters({ prompt:'select_account' });
-    await signInWithPopup(auth, p, browserPopupRedirectResolver);
-  } catch(e){ say('err','Sign-in failed: ' + (e.code||e.message)); }
-};
-
-onAuthStateChanged(auth, user => {
-  if (!user){
-    say('info','Sign in with the same Google account you added to boardMembers.');
-    $('signinBtn').style.display='block'; $('loadBtn').style.display='none';
-    return;
-  }
-  say('ok','Signed in as ' + user.email + ' — ready to load.');
-  $('signinBtn').style.display='none';
-  $('loadBtn').style.display='block';
-  $('loadBtn').disabled = false;
-});
-
-$('loadBtn').onclick = async () => {
-  $('loadBtn').disabled = true;
-  say('info','Writing records…');
-  let n = 0, failed = 0;
-  for (const coll of ['actions','topics','agenda','events']){
-    for (const [i, item] of DATA[coll].entries()){
-      const id = coll + '-' + String(i+1).padStart(2,'0');
-      try {
-        await setDoc(doc(db, coll, id),
-          { ...item, updatedBy: auth.currentUser.email, updatedAt: serverTimestamp() },
-          { merge:true });
-        n++; log('✓ ' + coll.padEnd(8) + id + '  ' + item.title);
-      } catch(e){
-        failed++; log('✗ ' + coll + '/' + id + '  ' + (e.code||e.message));
-      }
-    }
-  }
-  if (failed){
-    say('warn', n + ' written, ' + failed + ' failed. If failures say permission-denied, publish firestore.rules and confirm your boardMembers record has canSeeConfidential: true (needed for the in-camera items).');
-  } else {
-    say('ok','All ' + n + ' records loaded. You can close this page.');
-  }
-  $('doneBtn').style.display='block';
-};
-
-$('doneBtn').onclick = () => location.href = './index.html';
-</script>
+  <script>setTimeout(function(){location.replace('./sync.html');}, 6000);</script>
 </body>
 </html>
