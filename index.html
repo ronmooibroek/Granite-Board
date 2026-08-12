@@ -447,15 +447,20 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
   getRedirectResult, signOut, onAuthStateChanged, browserPopupRedirectResolver }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, onSnapshot, addDoc, updateDoc,
-  deleteDoc, query, orderBy, serverTimestamp }
+import { initializeFirestore, collection, doc, getDoc, getDocs, onSnapshot, addDoc,
+  updateDoc, deleteDoc, query, orderBy, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getFunctions, httpsCallable }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+// Safari and some networks block Firestore's streaming WebChannel, which makes
+// onSnapshot hang forever with no error. Auto-detect and fall back to long polling.
+const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  useFetchStreams: false
+});
 
 const $ = id => document.getElementById(id);
 let ME = null;              // { email, name, photo, canSeeConfidential }
@@ -629,26 +634,49 @@ function showListError(elId, name, err){
     Could not load ${esc(name)}: ${esc(msg)}</div>`;
 }
 
+function sortRows(rows, sortField){
+  rows.sort((a, b) => {
+    const av = a[sortField], bv = b[sortField];
+    if (typeof av === 'number' && typeof bv === 'number') return av - bv;
+    return String(av ?? '').localeCompare(String(bv ?? ''));
+  });
+  return rows;
+}
+
 function sub(name, sortField, renderer, elId){
   // Order client-side rather than in the query: a document missing the sort
   // field is silently dropped by Firestore's orderBy, which looks like data loss.
+  let delivered = false;
+
   const u = onSnapshot(collection(db, name),
     snap => {
+      delivered = true;
       setSync(true);
-      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      rows.sort((a, b) => {
-        const av = a[sortField], bv = b[sortField];
-        if (typeof av === 'number' && typeof bv === 'number') return av - bv;
-        return String(av ?? '').localeCompare(String(bv ?? ''));
-      });
-      renderer(rows);
+      renderer(sortRows(snap.docs.map(d => ({ id: d.id, ...d.data() })), sortField));
     },
     err => {
+      delivered = true;
       setSync(false);
       console.error(name, err);
       showListError(elId, name, err);
     });
   unsubs.push(u);
+
+  // If the realtime channel never responds (blocked stream), fetch once so the
+  // dashboard still shows data — it just will not update live until reload.
+  setTimeout(async () => {
+    if (delivered) return;
+    console.warn(name + ': realtime stream silent, falling back to one-time read');
+    try {
+      const snap = await getDocs(collection(db, name));
+      renderer(sortRows(snap.docs.map(d => ({ id: d.id, ...d.data() })), sortField));
+      const t = $('syncTxt'); if (t) t.textContent = 'snapshot';
+      const dt = $('syncDot'); if (dt) dt.className = 'dot off';
+    } catch (e) {
+      console.error(name + ' fallback failed', e);
+      showListError(elId, name, e);
+    }
+  }, 6000);
 }
 
 // ---------------- SECTION STATE ----------------
