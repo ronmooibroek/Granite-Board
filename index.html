@@ -597,27 +597,56 @@ function setSync(ok){
   $('syncTxt').textContent = ok ? 'live' : 'offline';
 }
 
+window.addEventListener('error', e => {
+  console.error('page error', e.error || e.message);
+  const t = document.getElementById('syncTxt');
+  if (t) { t.textContent = 'error'; document.getElementById('syncDot').className = 'dot off'; }
+});
+
 function subscribeAll(){
-  sub('actions', 'order', renderActions);
-  sub('topics',  'order', renderTopics);
-  sub('agenda',  'order', renderAgenda);
-  sub('events',  'date',  renderEvents);
-  sub('convenors','order', renderConvenors);
-  sub('leagueIssues','order', renderIssues);
+  const jobs = [
+    ['actions','order',renderActions,'taskList'],
+    ['topics','order',renderTopics,'topicList'],
+    ['agenda','order',renderAgenda,'agendaList'],
+    ['events','date',renderEvents,'eventList'],
+    ['convenors','order',renderConvenors,'convList'],
+    ['leagueIssues','order',renderIssues,'issueList']
+  ];
+  for (const [name, sortField, renderer, elId] of jobs){
+    try { sub(name, sortField, renderer, elId); }
+    catch (e){
+      console.error('subscribe failed:', name, e);
+      showListError(elId, name, e);
+    }
+  }
 }
 
-function sub(name, sortField, renderer){
-  const q = query(collection(db, name), orderBy(sortField));
-  const u = onSnapshot(q,
+function showListError(elId, name, err){
+  const el = $(elId);
+  if (!el) return;
+  const msg = (err && (err.code || err.message)) || 'unknown error';
+  el.innerHTML = `<div class="empty" style="color:var(--house-red)">
+    Could not load ${esc(name)}: ${esc(msg)}</div>`;
+}
+
+function sub(name, sortField, renderer, elId){
+  // Order client-side rather than in the query: a document missing the sort
+  // field is silently dropped by Firestore's orderBy, which looks like data loss.
+  const u = onSnapshot(collection(db, name),
     snap => {
       setSync(true);
-      renderer(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      rows.sort((a, b) => {
+        const av = a[sortField], bv = b[sortField];
+        if (typeof av === 'number' && typeof bv === 'number') return av - bv;
+        return String(av ?? '').localeCompare(String(bv ?? ''));
+      });
+      renderer(rows);
     },
     err => {
       setSync(false);
       console.error(name, err);
-      // A missing index or empty collection shouldn't look like a crash
-      renderer([]);
+      showListError(elId, name, err);
     });
   unsubs.push(u);
 }
