@@ -93,7 +93,7 @@
   details.sec > summary .chev{margin-left:auto;color:var(--stone);font-size:.8rem;
     transition:transform .18s ease;flex:none}
   details.sec[open] > summary .chev{transform:rotate(90deg)}
-  details.sec > summary .count{font-family:'Archivo',sans-serif;font-size:.7rem;font-weight:700;
+  details.sec > summary .seccount{font-family:'Archivo',sans-serif;font-size:.7rem;font-weight:700;
     background:var(--frost);color:var(--house-blue-deep);border-radius:20px;padding:2px 9px}
   details.sec > summary .addbtn{margin-left:0}
   .secbody{padding:0 21px 19px}
@@ -255,7 +255,7 @@
       <div>
         <div class="nm" id="uName"></div>
         <div class="em" id="uEmail"></div>
-        <div class="synced"><span class="dot" id="syncDot"></span><span id="syncTxt">live</span> · <span style="opacity:.7">v5</span></div>
+        <div class="synced"><span class="dot" id="syncDot"></span><span id="syncTxt">live</span> · <span style="opacity:.7">v6</span></div>
       </div>
       <a class="headlink" href="./sync.html" title="Import and export data">⇄ Sync</a>
       <button class="signout" id="signoutBtn">Sign out</button>
@@ -293,7 +293,7 @@
     <div>
       <details class="sec" id="secActions" open>
         <summary><span class="mini-house"></span> My Action Items
-          <span class="count" id="cntActions">—</span>
+          <span class="seccount" id="cntActions">—</span>
           <span class="chev">▶</span></summary>
         <div class="secbody">
           <p class="intro">Shared with the board — changes save instantly for everyone.
@@ -304,7 +304,7 @@
       </details>
       <details class="sec" id="secAgenda">
         <summary><span class="mini-house"></span> Executive Agenda
-          <span class="count" id="cntAgenda">—</span>
+          <span class="seccount" id="cntAgenda">—</span>
           <span class="chev">▶</span></summary>
         <div class="secbody">
           <p class="intro">Aug 18, 6:30pm, Club Boardroom.
@@ -314,7 +314,7 @@
       </details>
       <details class="sec" id="secConv">
         <summary><span class="mini-house"></span> Convenors
-          <span class="count" id="cntConv">—</span>
+          <span class="seccount" id="cntConv">—</span>
           <span class="chev">▶</span></summary>
         <div class="secbody">
           <p class="intro">Your league convenors. Tap a name to call or email.
@@ -327,7 +327,7 @@
     <div>
       <details class="sec" id="secTopics" open>
         <summary><span class="mini-house"></span> Hot Topics in Play
-          <span class="count" id="cntTopics">—</span>
+          <span class="seccount" id="cntTopics">—</span>
           <span class="chev">▶</span></summary>
         <div class="secbody">
           <p class="intro">Live board issues and where each one stands.
@@ -337,7 +337,7 @@
       </details>
       <details class="sec" id="secIssues" open>
         <summary><span class="mini-house"></span> League Issues
-          <span class="count" id="cntIssues">—</span>
+          <span class="seccount" id="cntIssues">—</span>
           <span class="chev">▶</span></summary>
         <div class="secbody">
           <p class="intro">Issues raised by convenors or members, and where each stands.
@@ -347,7 +347,7 @@
       </details>
       <details class="sec" id="secEvents">
         <summary><span class="mini-house"></span> Ice &amp; Events Ahead
-          <span class="count" id="cntEvents">—</span>
+          <span class="seccount" id="cntEvents">—</span>
           <span class="chev">▶</span></summary>
         <div class="secbody">
           <p class="intro">Season schedule. Past items grey out automatically.
@@ -542,7 +542,8 @@ onAuthStateChanged(auth, async user => {
   $('uEmail').textContent = ME.email;
   if (ME.photo) $('uPhoto').src = ME.photo; else $('uPhoto').style.display = 'none';
   $('gate').style.display = 'none'; $('app').style.display = 'block';
-  startCountdowns();
+  // Never let a rendering error here stop the data subscriptions.
+  try { startCountdowns(); } catch (e) { console.error('countdowns failed', e); }
   subscribeAll();
 });
 
@@ -553,8 +554,10 @@ function daysTo(dateStr){
   return Math.round((t - now) / 86400000);
 }
 function startCountdowns(){
-  document.querySelectorAll('.count').forEach(c => {
-    const d = daysTo(c.dataset.target), n = c.querySelector('[data-num]');
+  document.querySelectorAll('.count[data-target]').forEach(c => {
+    const n = c.querySelector('[data-num]');
+    if (!n) return;                     // not a countdown card
+    const d = daysTo(c.dataset.target);
     c.classList.remove('urgent','past');
     if (d > 0){ n.innerHTML = d + '<small>day' + (d===1?'':'s') + '</small>'; if (d<=7) c.classList.add('urgent'); }
     else if (d === 0){ n.textContent = 'Today'; c.classList.add('urgent'); }
