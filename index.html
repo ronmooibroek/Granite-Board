@@ -214,27 +214,6 @@
   .issue .meta{font-size:.73rem;color:var(--stone);margin-top:3px}
   .issue p{margin:5px 0 0;font-size:.79rem;color:var(--ink-soft)}
 
-  /* ---------- ask claude ---------- */
-  .askrow{display:flex;gap:9px;align-items:flex-end}
-  #askBox{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
-    font-family:inherit;font-size:.88rem;resize:vertical;color:var(--ink)}
-  #askBox:focus{outline:2px solid var(--house-blue);border-color:transparent}
-  #askBtn{white-space:nowrap;padding:11px 20px}
-  #askBtn:disabled{background:var(--stone);cursor:not-allowed}
-  .bubble{margin-bottom:11px;font-size:.86rem}
-  .bubble.me{text-align:right}
-  .bubble.me span{background:var(--house-blue);color:#fff;padding:8px 13px;border-radius:14px 14px 3px 14px;display:inline-block;max-width:85%;text-align:left}
-  .bubble.ai span{background:var(--frost);color:var(--ink);padding:9px 13px;border-radius:14px 14px 14px 3px;display:inline-block;max-width:90%;white-space:pre-wrap}
-  .bubble.err span{background:#FBE7E5;color:var(--house-red);padding:9px 13px;border-radius:10px;display:inline-block}
-  .thinking span{color:var(--stone);font-style:italic}
-  .pend{border:1px solid var(--amber);background:#FEFBF4;border-radius:11px;padding:13px 15px;margin-top:12px}
-  .pend h4{margin:0 0 8px;font-size:.85rem;color:var(--amber)}
-  .pend ul{margin:0 0 11px;padding-left:18px;font-size:.82rem}
-  .pend li{margin-bottom:4px}
-  .pend .ops{display:flex;gap:8px}
-  .pend button{padding:8px 15px;font-size:.83rem;border-radius:8px;border:none;cursor:pointer;font-weight:600}
-  .pend .yes{background:var(--good);color:#fff}
-  .pend .no{background:var(--frost);color:var(--ink-soft)}
 
   footer{text-align:center;font-size:.73rem;color:var(--stone);margin-top:26px;padding-top:16px;border-top:1px solid var(--line)}
 
@@ -380,16 +359,6 @@
     </div>
   </div>
 
-  <section class="card" id="claudeCard">
-    <h2><span class="mini-house"></span> Ask Claude</h2>
-    <p class="intro">Ask about your board data, or tell it to add and update items. Nothing is written until you approve it.</p>
-    <div id="chatLog"></div>
-    <div class="askrow">
-      <textarea id="askBox" rows="2" placeholder="e.g. What's overdue? · Add an action to book ice for the Fall Classic"></textarea>
-      <button class="btn btn-primary" id="askBtn">Ask</button>
-    </div>
-    <div id="pending"></div>
-  </section>
 
   <footer>
     Board tool for the K-W Granite Club. Contains items marked <b>in camera</b> — keep confidential.<br>
@@ -450,8 +419,6 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
 import { initializeFirestore, collection, doc, getDoc, getDocs, onSnapshot, addDoc,
   updateDoc, deleteDoc, query, orderBy, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { getFunctions, httpsCallable }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -904,110 +871,8 @@ $('mSave').onclick = async () => {
   }
 };
 
-// ---------------- ASK CLAUDE ----------------
-const askFn = httpsCallable(getFunctions(app, 'us-central1'), 'askClaude');
-let chatHistory = [];
-let pendingChanges = null;
-
-function bubble(kind, text){
-  const d = document.createElement('div');
-  d.className = 'bubble ' + kind;
-  const s = document.createElement('span');
-  s.textContent = text;
-  d.appendChild(s);
-  $('chatLog').appendChild(d);
-  d.scrollIntoView({ block:'nearest' });
-  return d;
-}
-
-function describe(c){
-  if (c.op === 'add')    return `Add to ${c.collection}: “${c.data?.title || '(untitled)'}”`;
-  if (c.op === 'update') return `Update ${c.collection}/${c.id}: ${Object.keys(c.data||{}).join(', ')}`;
-  if (c.op === 'delete') return `Delete ${c.collection}/${c.id}`;
-  return JSON.stringify(c);
-}
-
-function showPending(changes){
-  pendingChanges = changes;
-  $('pending').innerHTML = `<div class="pend">
-    <h4>Claude wants to make ${changes.length} change${changes.length===1?'':'s'}</h4>
-    <ul>${changes.map(c => '<li>' + esc(describe(c)) + '</li>').join('')}</ul>
-    <div class="ops">
-      <button class="yes" id="applyYes">Apply</button>
-      <button class="no"  id="applyNo">Discard</button>
-    </div></div>`;
-  $('applyYes').onclick = applyPending;
-  $('applyNo').onclick  = () => { pendingChanges = null; $('pending').innerHTML = ''; };
-}
-
-async function applyPending(){
-  if (!pendingChanges) return;
-  $('applyYes').disabled = true;
-  let ok = 0, bad = 0;
-  for (const c of pendingChanges){
-    try {
-      if (c.op === 'add'){
-        const payload = { ...c.data, updatedBy: ME.email, updatedAt: serverTimestamp() };
-        if (c.collection === 'actions' && payload.done === undefined) payload.done = false;
-        if (payload.order === undefined) payload.order = Date.now() % 100000;
-        await addDoc(collection(db, c.collection), payload);
-      } else if (c.op === 'update'){
-        await updateDoc(doc(db, c.collection, c.id),
-          { ...c.data, updatedBy: ME.email, updatedAt: serverTimestamp() });
-      } else if (c.op === 'delete'){
-        await deleteDoc(doc(db, c.collection, c.id));
-      }
-      ok++;
-    } catch(e){ bad++; console.error(c, e); }
-  }
-  pendingChanges = null;
-  $('pending').innerHTML = '';
-  bubble('ai', bad ? `Applied ${ok}, ${bad} failed.` : `Applied ${ok} change${ok===1?'':'s'}.`);
-}
-
-async function ask(){
-  const q = $('askBox').value.trim();
-  if (!q) return;
-  $('askBox').value = '';
-  $('askBtn').disabled = true;
-  bubble('me', q);
-  const thinking = bubble('ai thinking', 'Thinking…');
-  try {
-    const res = await askFn({ question: q, history: chatHistory });
-    const { reply, changes } = res.data || {};
-    thinking.remove();
-    bubble('ai', reply || '(no reply)');
-    chatHistory.push({ role:'user', content:q }, { role:'assistant', content: reply || '' });
-    if (chatHistory.length > 8) chatHistory = chatHistory.slice(-8);
-    if (changes && changes.length) showPending(changes);
-  } catch(e){
-    thinking.remove();
-    const c = e.code || '';
-    if (c.includes('unauthenticated') || c.includes('permission-denied'))
-      bubble('err', 'Not authorised. Confirm your boardMembers record exists.');
-    else if (c.includes('not-found') || c.includes('internal'))
-      bubble('err', 'The Claude function is not deployed yet, or the API key secret is missing. See README-claude.md.');
-    else
-      bubble('err', 'Failed: ' + (e.message || c));
-  }
-  $('askBtn').disabled = false;
-}
-
-// show when the nightly sync last ran
-getDoc(doc(db, 'meta', 'calendarSync')).then(d => {
-  if (d.exists() && d.data().lastRun) {
-    const t = d.data().lastRun.toDate();
-    $('syncInfo').textContent = 'Last synced ' + t.toLocaleString('en-CA',
-      { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) + '.';
-  }
-}).catch(()=>{});
-
 $('convFilter').addEventListener('input', drawConvenors);
 
-$('askBtn').onclick = ask;
-$('askBox').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) ask();
-});
 document.body.addEventListener('click', async e => {
   const add  = e.target.closest('[data-add]');
   const edit = e.target.closest('[data-edit]');
