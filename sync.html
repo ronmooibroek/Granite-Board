@@ -84,21 +84,9 @@
     <div class="msg" id="expMsg"></div>
   </div>
 
-  <!-- CALENDAR -->
-  <div class="card" id="calCard" style="display:none">
-    <h2><span class="step">2</span> Calendar — pull ice &amp; events</h2>
-    <p class="hint">Reads the Ice Schedule calendar and rewrites the events list.
-      Runs automatically each night; use this to pull changes right away.
-      Hand-added events are never touched.</p>
-    <div class="row">
-      <button class="btn btn-primary" id="calBtn">Sync calendar now</button>
-    </div>
-    <div class="msg" id="calMsg"></div>
-  </div>
-
   <!-- IMPORT -->
   <div class="card" id="importCard" style="display:none">
-    <h2><span class="step">3</span> Import — apply Claude's updates</h2>
+    <h2><span class="step">2</span> Import — apply Claude's updates</h2>
     <p class="hint">Paste the JSON block Claude gives you. You'll see exactly what will
       change before anything is written.</p>
     <textarea id="importBox" placeholder='{"changes":[{"op":"add","collection":"leagueIssues","data":{...}}]}'></textarea>
@@ -128,15 +116,16 @@ const firebaseConfig = {
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, browserPopupRedirectResolver }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
+import { initializeFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
   deleteDoc, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { getFunctions, httpsCallable }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  useFetchStreams: false
+});
 const $ = id => document.getElementById(id);
 let ME = null, staged = null;
 
@@ -168,23 +157,8 @@ onAuthStateChanged(auth, async user => {
   say('status','ok','Signed in as ' + user.email);
   $('signinBtn').style.display='none';
   $('exportCard').style.display='block'; $('importCard').style.display='block';
-  $('calCard').style.display='block';
   if (!ME.conf) $('incConf').disabled = true;
 });
-
-// ---------------- CALENDAR ----------------
-const calFn = httpsCallable(getFunctions(app,'us-central1'), 'syncCalendarNow');
-$('calBtn').onclick = async () => {
-  const b = $('calBtn'); b.disabled = true; b.textContent = 'Syncing…';
-  say('calMsg','info','Reading the Ice Schedule calendar…');
-  try {
-    const r = await calFn({});
-    say('calMsg','ok',`Synced ${r.data.count} events.`);
-  } catch(e){
-    say('calMsg','err','Sync failed: ' + (e.message || e.code || ''));
-  }
-  b.disabled = false; b.textContent = 'Sync calendar now';
-};
 
 // ---------------- EXPORT ----------------
 async function grab(name){
